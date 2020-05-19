@@ -1,5 +1,4 @@
 # Lab 3 Skeleton
-#
 # Based on of_tutorial by James McCauley
 
 from pox.core import core
@@ -22,8 +21,25 @@ class Firewall (object):
 
   def do_firewall (self, packet, packet_in):
     # The code in here will be executed for every packet.
-    print "Example Code."
+    #print "Example Code."
+ 
+    msg = of.ofp_flow_mod()
+    msg.match = of.ofp_match.from_packet(packet)
+    msg.idle_timeout = 10
+    msg.hard_timeout = 20
+    msg.data = packet_in
 
+    if packet.find('arp') is not None:
+      msg.actions.append(of.ofp_action_output(port = of.OFPP_FLOOD))
+      self.connection.send(msg)
+    elif packet.find('icmp') is not None:
+      msg.match.dl_type = 0x800
+      msg.actions.append(of.ofp_action_output(port = of.OFPP_FLOOD))
+      self.connection.send(msg)
+    else:
+      msg.match.dl_type = 0x800
+      self.connection.send(msg)
+      
   def _handle_PacketIn (self, event):
     """
     Handles packet in messages from the switch.
